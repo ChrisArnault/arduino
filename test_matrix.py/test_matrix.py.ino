@@ -197,7 +197,7 @@ void loop() {
   else
   {
     int letter_index = int(timeCount / delta);
-    int N = 10;
+    int N = 1;
     if (letter_index < 1)
     {
       byte c[N];
@@ -206,6 +206,7 @@ void loop() {
       {
           c[i] = random(8);
           r[i] = random(8);
+          ardprintf("c=%d r=%d", c[i], r[i]);
       
           drawPoints(N, c, r);
       }
