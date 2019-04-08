@@ -1,32 +1,48 @@
-/*
-* SerialReceive sketch
-* Blink the LED at a rate proportional to the received digit value
-*/
-const int ledPin = 13; // pin the LED is connected to
-int blinkRate=0; // blink rate stored in this variable
-void setup()
-{
-  Serial.begin(9600); // Initialize serial port to send and receive at 9600 baud
-  pinMode(ledPin, OUTPUT); // set this pin as output
+
+long speed = 9600;
+//long speed = 115200;
+
+
+void setup() {
+  Serial.begin(speed); // use the same baud-rate as the python side
 }
-void loop()
-{
-  if ( Serial.available()) // Check to see if at least one character is available
-  {
-    char ch = Serial.read();
-    if(ch >= '0' && ch <= '9') // is this an ascii digit between 0 and 9?
+
+char buffer[256];
+int pos = 0;
+
+long number = 0;
+
+void loop() {
+  if(Serial.available() > 0) {
+    char data = Serial.read();
+    if (data == '#')
     {
-      blinkRate = (ch - '0'); // ASCII value converted to numeric value
-      blinkRate = blinkRate * 100; // actual blinkrate is 100 mS times received digit
+      number += 1;
+      Serial.print('(');
+      Serial.print(number);
+      Serial.print(')');
+      Serial.print(buffer);
+
+      char delims[] = "|=";
+      char* ptr = strtok(buffer, delims);
+
+      while(ptr != NULL) {
+          // create next part
+          int value = atoi(ptr);
+          Serial.print(" - ");
+          Serial.print(value);
+          ptr = strtok(NULL, delims);
+      }
+
+      Serial.println("");
+
+      pos = 0;
+    }
+    else
+    {
+      buffer[pos] = data;
+      buffer[pos+1] = 0;
+      pos += 1;
     }
   }
-  blink();
-}
-// blink the LED with the on and off times determined by blinkRate
-void blink()
-{
-  digitalWrite(ledPin,HIGH);
-  delay(blinkRate); // delay depends on blinkrate value
-  digitalWrite(ledPin,LOW);
-  delay(blinkRate);
 }

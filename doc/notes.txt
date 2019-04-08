@@ -1,0 +1,24 @@
+=================
+from https://openclassrooms.com/forum/sujet/arduino-equivalant-explode-de-php
+strtok
+=================
+
+
+char str[] ="AB|CD|EF|GH";
+char dlm[] = "|";
+
+int cnt = 0;
+char* tab[10] = { 0 };
+
+char *pch = strtok(str, dlm);
+
+while ( pch != NULL ) {
+    if (cnt < 10) {
+        tab[cnt++] = pch;
+    } else {
+        break;
+    }
+    pch = strtok (NULL, dlm);
+}
+
+

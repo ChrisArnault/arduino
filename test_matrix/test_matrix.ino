@@ -1,70 +1,5 @@
 #include <SoftwareSerial.h>
 
-#ifndef ARDPRINTF
-#define ARDPRINTF
-#define ARDBUFFER 16
-#include <stdarg.h>
-#include <Arduino.h>
-
-void int2bin(int d, char temp[8])
-{
-  for (int i = 0; i < 8; i++)
-  {
-    int b = (d >> i) & 0x01;
-    temp[i] = b == 0 ? '0' : '1';
-  }
-}
-
-int ardprintf(char *str, ...)
-{
-  int i, count=0, j=0, flag=0;
-  char temp[ARDBUFFER+1];
-  for(i=0; str[i]!='\0';i++)  if(str[i]=='%')  count++;
-
-  va_list argv;
-  va_start(argv, count);
-  for(i=0,j=0; str[i]!='\0';i++)
-  {
-    if(str[i]=='%')
-    {
-      temp[j] = '\0';
-      Serial.print(temp);
-      j=0;
-      temp[0] = '\0';
-
-      switch(str[++i])
-      {
-        case 'd': Serial.print(va_arg(argv, int));
-                  break;
-        case 'l': Serial.print(va_arg(argv, long));
-                  break;
-        case 'f': Serial.print(va_arg(argv, double));
-                  break;
-        case 'c': Serial.print((char)va_arg(argv, int));
-                  break;
-        case 's': Serial.print(va_arg(argv, char *));
-                  break;
-        default:  ;
-      };
-    }
-    else 
-    {
-      temp[j] = str[i];
-      j = (j+1)%ARDBUFFER;
-      if(j==0) 
-      {
-        temp[ARDBUFFER] = '\0';
-        Serial.print(temp);
-        temp[0]='\0';
-      }
-    }
-  };
-  Serial.println();
-  return count + 1;
-}
-#undef ARDBUFFER
-#endif
-
 //update from SAnwandter
 #define ROW_1 2
 #define ROW_2 3
@@ -171,50 +106,125 @@ void setup()
     pinMode(A3, OUTPUT);
 }
 
+void test_serial()
+{
+  // delayMicroseconds(1000);
+
+  if (Serial.available())
+  {
+    char* input = Serial.read();
+    char sep[] = "|";
+ 
+    int count = 0;
+    char* tab[10] = { 0 };
+ 
+    byte x = 0;
+    byte y = 0;
+
+    char* token = strtok(input, sep);
+    x = atoi(token);
+    token = strtok (NULL, sep);
+    y = atoi(token);
+
+    /*
+    while ( token != NULL ) {
+      if (count < 10) {
+          int val = atoi(token);
+          if (count == 0) x = val;
+          if (count == 1) y = val;
+          //Serial.print(token);
+          //Serial.print(" val = ");
+          //Serial.println(val);
+          count += 1;
+      } else {
+          break;
+      }
+      token = strtok (NULL, sep);
+    }
+    */
+
+    x = random(256);
+    y = random(256);
+
+    int c = coord2row(y, 0, 256);
+    int r = coord2row(x, 0, 256);
+
+    drawPoint(c, r);
+  }
+}
+
+int loop_letters(int t)
+{  
+  int delta = 200;
+
+  int letter_index = int(t / delta);
+  if (letter_index < 26)
+  {
+    // Serial.println(letter_index);
+    // Serial.println(t);
+    drawScreen(letter_index * 8);
+    delayMicroseconds(100);
+  } 
+  else {
+  // back to the start
+    t = 0;
+  }
+
+  return t;
+}
+
 void loop() {
   // This could be rewritten to not use a delay, which would make it appear brighter
-  delay(5);
+  delay(2);
   timeCount += 1;
   
-  int delta = 200;
-  int letters = 0;
+  int mode = 2;
 
-  if (letters == 1)
+  if (mode == 1)
   {
-    int letter_index = int(timeCount / delta);
-    if (letter_index < 26)
+    timeCount = loop_letters(timeCount);
+  }
+
+  if (mode == 2)
+  {
+    int delta = 1000;
+    int run_it = timeCount % delta;
+    int N = 1;
+    if (run_it == 0)
     {
-      Serial.println(letter_index);
-      Serial.println(timeCount);
-      drawScreen(letter_index * 8);
-      delay(1);
+      byte c[N];
+      byte r[N];
+      for (int i = 0; i < N; i++)
+      {
+        int x = random(256);
+        int y = random(256);
+          c[i] = coord2row(x, 0, 256);
+          r[i] = coord2row(y, 0, 256);
+          // c[i] = random(8);
+          // r[i] = random(8);
+          /*
+          Serial.print("x=");
+          Serial.print(x);
+          Serial.print(" y=");
+          Serial.print(y);
+
+          Serial.print(" c=");
+          Serial.print(c[i]);
+          Serial.print(" r=");
+          Serial.println(r[i]);
+          */
+      }
+      drawPoints(N, c, r);
     } 
     else {
     // back to the start
       timeCount = 0;
     }
   }
-  else
+
+  if (mode == 3)
   {
-    int letter_index = int(timeCount / delta);
-    int N = 1;
-    if (letter_index < 1)
-    {
-      byte c[N];
-      byte r[N];
-      for (int i = 0; i < N; i++)
-      {
-          c[i] = random(8);
-          r[i] = random(8);
-          ardprintf("c=%d r=%d", c[i], r[i]);
-      
-          drawPoints(N, c, r);
-      }
-    } 
-    else {
-    // back to the start
-      timeCount = 0;
-    }
+    test_serial();
   }
 }
 
@@ -228,10 +238,11 @@ void drawScreen(int index)
         {
           // if You set (~buffer2[r] >> c) then You will have positive
           digitalWrite(col[c], (~LETTERS[index + r] >> c) & 0x01); // initiate whole column
-          delayMicroseconds(1000000);       // uncoment deley for diferent speed of display
-          //delayMicroseconds(1000);
-          //delay(10);
-          //delay(100);
+          // delay(100);       // uncoment deley for diferent speed of display
+          for (int t = 0; t < 10; t++)
+          {
+            delayMicroseconds(10);
+          }
           
           digitalWrite(col[c], 1);      // reset whole column
         }
@@ -244,7 +255,7 @@ void drawScreen(int index)
 byte coord2row(int data, int data_min, int data_max)
 {
   // peut s'appliquer à une donnée x => column ou y = row 
-  byte led = ((data - data_min) / (data_max - data_min)) * 8;
+  byte led = int((float(data - data_min) / float(data_max - data_min)) * 8.0);
   return led;
 }
 
@@ -279,7 +290,44 @@ void drawPoints(int N, byte* column, byte* row) {
         {
             digitalWrite(col[c], (~LEDS[r] >> c) & 0x01); // initiate whole column
 
-            delayMicroseconds(1000); // uncoment deley for diferent speed of display
+            delay(1); // uncoment deley for diferent speed of display
+            // delayMicroseconds(30000);
+            // delayMicroseconds(10); // uncoment deley for diferent speed of display
+            digitalWrite(col[c], 1); // reset whole column
+        }
+        digitalWrite(rows[r], LOW); // reset whole row
+        // otherwise last row will intersect with next row
+    }
+}
+
+void drawPoint(byte column, byte row) {
+    byte LEDS[] = {
+      B00000000,B00000000,B00000000,B00000000,B00000000,B00000000,B00000000,B00000000
+    };
+
+    for (int r = 0; r < 8; r++)
+    {
+      LEDS[r] = 0;
+    }
+
+    for (int r = 0; r < 8; r++)
+    {
+      if (r == row)
+      {
+         byte d = 1 << column;
+         LEDS[r] |= d;
+      }
+    }
+
+    // Turn on each row in series
+    for (byte r = 0; r < 8; r++)
+    {
+        digitalWrite(rows[r], HIGH); // initiate whole row
+        for (byte c = 0; c < 8; c++) // count next col
+        {
+            digitalWrite(col[c], (~LEDS[r] >> c) & 0x01); // initiate whole column
+
+            delay(1); // uncoment deley for diferent speed of display
             // delayMicroseconds(30000);
             // delayMicroseconds(10); // uncoment deley for diferent speed of display
             digitalWrite(col[c], 1); // reset whole column
