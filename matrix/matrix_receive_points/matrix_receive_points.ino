@@ -31,8 +31,8 @@ const byte col[] = {
 
 // general counter to be incremented at each loop execution
 long timeCount = 0;
-long speed = 9600;
-//long speed = 115200;
+// long speed = 9600;
+long speed = 115200;
 
 char buffer[256];
 int pos = 0;
@@ -54,25 +54,17 @@ void setup()
     pinMode(A2, OUTPUT);
     pinMode(A3, OUTPUT);
 
-/*
-  while (Serial.available() > 0) {
-    Serial.println("data");
-    char data = Serial.read();
-    if (data == '#')
+
+    while (Serial.available() > 0)
     {
-      Serial.println("read data");
-      Serial.println(buffer);
-      pos += 1;
+       byte data = Serial.read();
+       if (data == '>')
+       {
+          break;
+       }
     }
-    else
-    {
-      Serial.println("data");
-      buffer[pos] = data;
-      buffer[pos+1] = 0;
-      pos += 1;
-    }
-  }  
-*/
+
+    Serial.println("starting");
 
 }
 
@@ -96,57 +88,18 @@ long number = 0;
 byte c = 0;
 byte r = 0;
 
-int command()
-{
-  if(Serial.available() > 0) {
-    char data = Serial.read();
-    if (data == '#')
-    {
-      Serial.println(buffer);
-
-      if (strcmp(buffer, "start") == 0)
-      {
-        pos = 0;
-        return 1;
-      }
-      if (strcmp(buffer, "stop") == 0)
-      {
-        pos = 0;
-        return 2;
-      }
-      if (strcmp(buffer, "running") == 0)
-      {
-        pos = 0;
-        return 3;
-      }
-
-      // Serial.flush();
-
-      pos = 0;
-    }
-    else
-    {
-      buffer[pos] = data;
-      buffer[pos+1] = 0;
-      pos += 1;
-    }
-  }  
-}
-
 void get_coords(int* x, int* y)
 {
   if(Serial.available() > 0) {
-    char data = Serial.read();
+    byte data = Serial.read();
     if (data == '#')
     {
       number += 1;
 
-      /*
-      Serial.print('(');
-      Serial.print(number);
-      Serial.print(')');
-      Serial.print(buffer);
-      */
+      // Serial.print('(');
+      // Serial.print(number);
+      // Serial.print(')');
+      // Serial.print(buffer);
 
       char delims[] = "|";
       char* ptr = strtok(buffer, delims);
@@ -166,8 +119,6 @@ void get_coords(int* x, int* y)
           {
             *y = value;
           }
-          //Serial.print(" - ");
-          //Serial.print(value);
           ptr = strtok(NULL, delims);
           var += 1;
       }
@@ -199,6 +150,8 @@ void loop() {
       int x = -1;
       int y = -1;
 
+      // Serial.println(timeCount);
+
       get_coords(&x, &y);
 
       if (x > -1 && y > -1)
@@ -206,18 +159,18 @@ void loop() {
         number += 1;
         // Serial.println(timeCount);
 
+        c = coord2row(x, 0, 256);
+        r = coord2row(y, 0, 256);
+
         /*
         Serial.print("<");
         Serial.print("(");
         Serial.print(number);
         Serial.print(")");
         Serial.print("x = ");
-        */
-        c = coord2row(x, 0, 256);
-        r = coord2row(y, 0, 256);
-        /*
         Serial.print(x);
         Serial.print(",");
+        Serial.print("y = ");
         Serial.print(y);
         Serial.print(",");
         Serial.print(c);
