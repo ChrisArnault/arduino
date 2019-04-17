@@ -32,18 +32,16 @@ def sinus(t):
 with serial.Serial('COM5', speed, timeout=.1) as arduino:
     t = 0
     while True:
-        # x = int(random.random()*256)
-        # y = int(random.random()*256)
+        x = int(random.random()*256)
+        y = int(random.random()*256)
         # x, y = circle(t/100.0)
         x, y = sinus(t/50.0)
 
         arduino.write("{}|{}#".format(x, y).encode("utf-8"))
 
-        """
         data = arduino.readline()
         if data:
-            print(data.strip())
-        """
+            print(">>>", data.strip())
 
         t += 1
-        time.sleep(0.01)
+        time.sleep(0.05)

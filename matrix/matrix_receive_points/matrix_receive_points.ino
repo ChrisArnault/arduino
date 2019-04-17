@@ -54,7 +54,7 @@ void setup()
     pinMode(A2, OUTPUT);
     pinMode(A3, OUTPUT);
 
-
+    /*
     while (Serial.available() > 0)
     {
        byte data = Serial.read();
@@ -63,7 +63,7 @@ void setup()
           break;
        }
     }
-
+    */
     Serial.println("starting");
 
 }
@@ -85,10 +85,8 @@ long number = 0;
 /*
  * the current Led (row, column) to be set in the LED matrix
  */
-byte c = 0;
-byte r = 0;
 
-void get_coords(int* x, int* y)
+void get_coords(int* id1, int* x1, int* y1, int* id2, int* x2, int* y2)
 {
   if(Serial.available() > 0) {
     byte data = Serial.read();
@@ -96,11 +94,13 @@ void get_coords(int* x, int* y)
     {
       number += 1;
 
-      // Serial.print('(');
-      // Serial.print(number);
-      // Serial.print(')');
-      // Serial.print(buffer);
-
+      /*
+      Serial.print('(');
+      Serial.print(number);
+      Serial.print(')');
+      Serial.print(buffer);
+      */
+       
       char delims[] = "|";
       char* ptr = strtok(buffer, delims);
 
@@ -113,11 +113,27 @@ void get_coords(int* x, int* y)
           if (value >= 256) value = 255;
           if (var == 0)
           {
-            *x = value;
+            *id1 = value;
           }
           if (var == 1)
           {
-            *y = value;
+            *x1 = value;
+          }
+          if (var == 2)
+          {
+            *y1 = value;
+          }
+          if (var == 0)
+          {
+            *id2 = value;
+          }
+          if (var == 1)
+          {
+            *x2 = value;
+          }
+          if (var == 2)
+          {
+            *y2 = value;
           }
           ptr = strtok(NULL, delims);
           var += 1;
@@ -142,42 +158,55 @@ void loop() {
     // ie. the minimal loop occurs at the maximal frequence of 1/30000 seconds = 33 µs
 
     long change_point = 1;
+
+    byte c1;
+    byte r1;
+    byte c2;
+    byte r2;
+
     if (timeCount % change_point == 0)
     {
-      //int x = random(256);
-      //int y = random(256);
+      /*
+      int x = random(256);
+      int y = random(256);
+      */
 
-      int x = -1;
-      int y = -1;
+      int xs[2];
+      int ys[2];
+      
+      int id1 = -1;
+      int x1 = -1;
+      int y1 = -1;
 
-      // Serial.println(timeCount);
+      int id2 = -1;
+      int x2 = -1;
+      int y2 = -1;
 
-      get_coords(&x, &y);
+      get_coords(&id1, &x1, &y1, &id2, &x2, &y2);
 
-      if (x > -1 && y > -1)
+      if (x1 > -1 && y1 > -1 && x2 > -1 && y2 > -1)
       {
         number += 1;
-        // Serial.println(timeCount);
+        //Serial.println(timeCount);
 
-        c = coord2row(x, 0, 256);
-        r = coord2row(y, 0, 256);
+        c1 = coord2row(x1, 0, 256);
+        r1 = coord2row(y1, 0, 256);
+        c2 = coord2row(x2, 0, 256);
+        r2 = coord2row(y2, 0, 256);
 
-        /*
         Serial.print("<");
-        Serial.print("(");
-        Serial.print(number);
-        Serial.print(")");
-        Serial.print("x = ");
-        Serial.print(x);
+        Serial.print("x1 = ");
+        Serial.print(x1);
         Serial.print(",");
-        Serial.print("y = ");
-        Serial.print(y);
+        Serial.print("y1 = ");
+        Serial.print(y1);
         Serial.print(",");
-        Serial.print(c);
+        Serial.print("x2 = ");
+        Serial.print(x2);
         Serial.print(",");
-        Serial.print(r);
+        Serial.print("y2 = ");
+        Serial.print(y2);
         Serial.println("");
-        */
       }
     }
 
@@ -186,7 +215,46 @@ void loop() {
     float bright = 0.5;
     if (timeCount % int(1.0 / bright) == 0)
     {
-      drawPoint(c, r);
+      drawPoints(c1, r1, c2, r2);
+    }
+}
+
+
+void drawPoints(byte column1, byte row1, byte column2, byte row2) {
+    byte LEDS[] = {
+      B00000000,B00000000,B00000000,B00000000,B00000000,B00000000,B00000000,B00000000
+    };
+
+    for (int r = 0; r < 8; r++)
+    {
+      LEDS[r] = 0;
+    }
+
+    for (int r = 0; r < 8; r++)
+    {
+      if (r == row1)
+      {
+         byte d = 1 << column1;
+         LEDS[r] |= d;
+      }
+      if (r == row2)
+      {
+         byte d = 1 << column2;
+         LEDS[r] |= d;
+      }
+    }
+
+    // Turn on each row in series
+    for (byte r = 0; r < 8; r++)
+    {
+        digitalWrite(rows[r], HIGH); // initiate whole row
+        for (byte c = 0; c < 8; c++) // count next col
+        {
+            digitalWrite(col[c], (~LEDS[r] >> c) & 0x01); // initiate whole column
+            digitalWrite(col[c], 1); // reset whole column
+        }
+        digitalWrite(rows[r], LOW); // reset whole row
+        // otherwise last row will intersect with next row
     }
 }
 
